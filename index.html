@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDlxkH_GAzQeYa3Gocz9UpTd2aFQfuRetU",
+    authDomain: "orange-money-9ffa3.firebaseapp.com",
+    databaseURL: "https://orange-money-9ffa3-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "orange-money-9ffa3",
+    storageBucket: "orange-money-9ffa3.appspot.com",
+    messagingSenderId: "469194355910",
+    appId: "1:469194355910:web:f4602b47ee38b1001e93c7"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เช็คการจ่ายเงิน</title>
