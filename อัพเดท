@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบบันทึกข้อมูล</title>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, select, button { margin: 5px 0; display: block; }
+    table, th, td { border: 1px solid #000; border-collapse: collapse; padding: 8px; }
+  </style>
+</head>
+<body>
+  <h2>ระบบบันทึกการชำระเงิน</h2>
+  <label>ชื่อ:</label>
+  <input type="text" id="name" />
+  <label>ห้อง:</label>
+  <input type="text" id="class" />
+  <label>จำนวนเงิน:</label>
+  <input type="number" id="amount" />
+  <label>วันที่:</label>
+  <input type="date" id="date" />
+  <button onclick="savePayment()">บันทึก</button>
+
+  <h3>รายการทั้งหมด:</h3>
+  <table id="dataTable">
+    <thead>
+      <tr><th>ชื่อ</th><th>ห้อง</th><th>จำนวนเงิน</th><th>วันที่</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlxkH_GAzQeYa3Gocz9UpTd2aFQfuRetU",
+      authDomain: "orange-money-9ffa3.firebaseapp.com",
+      databaseURL: "https://orange-money-9ffa3-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "orange-money-9ffa3",
+      storageBucket: "orange-money-9ffa3.appspot.com",
+      messagingSenderId: "469194355910",
+      appId: "1:469194355910:web:f4602b47ee38b1001e93c7"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function savePayment() {
+      const name = document.getElementById("name").value;
+      const className = document.getElementById("class").value;
+      const amount = document.getElementById("amount").value;
+      const date = document.getElementById("date").value;
+      const id = Date.now().toString();
+
+      db.ref("payments/" + id).set({
+        name: name,
+        class: className,
+        amount: amount,
+        date: date
+      });
+    }
+
+    function loadPayments() {
+      db.ref("payments").on("value", (snapshot) => {
+        const data = snapshot.val();
+        const tableBody = document.querySelector("#dataTable tbody");
+        tableBody.innerHTML = "";
+        for (let id in data) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${data[id].name}</td>
+            <td>${data[id].class}</td>
+            <td>${data[id].amount}</td>
+            <td>${data[id].date}</td>
+          `;
+          tableBody.appendChild(row);
+        }
+      });
+    }
+
+    loadPayments();
+  </script>
+</body>
+</html>
