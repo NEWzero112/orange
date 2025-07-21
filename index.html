@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เช็คการจ่ายเงิน</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #FFECD1; /* Light orange background */
+            font-family: 'Prompt', sans-serif;
+        }
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .modal-enter {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="app" class="container mx-auto px-4 py-4">
+        <!-- Header -->
+        <header class="mb-6 text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-orange-600 mb-2">เช็คการจ่ายเงิน</h1>
+            <p class="text-orange-700 text-sm md:text-base">ตรวจสอบสถานะการชำระเงินของนักเรียนแต่ละสายชั้น</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="flex flex-col gap-4">
+            <!-- Sidebar for class selection -->
+            <div class="w-full">
+                <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+                    <h2 class="text-lg md:text-xl font-semibold text-orange-800 mb-3">เลือกสายชั้น</h2>
+                    <div id="class-buttons" class="flex flex-wrap gap-2">
+                        <!-- Class buttons will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Admin Panel Button -->
+                <button id="admin-btn" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                    </svg>
+                    ผู้ดูแลระบบ
+                </button>
+            </div>
+
+            <!-- Main content area -->
+            <div class="w-full">
+                <div id="student-list-container" class="bg-white rounded-lg shadow-md p-4 md:p-6">
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
+                        <h2 id="current-class-title" class="text-xl md:text-2xl font-semibold text-orange-800">กรุณาเลือกสายชั้น</h2>
+                        <div class="flex gap-2">
+                            <button id="add-payment-btn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 md:px-4 rounded-lg transition duration-300 text-sm hidden">
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    เพิ่มการชำระเงิน
+                                </div>
+                            </button>
+                            <button id="filter-btn" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 md:px-4 rounded-lg transition duration-300 text-sm hidden">
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+                                    </svg>
+                                    กรอง
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="filter-options" class="mb-4 p-3 bg-orange-50 rounded-lg hidden">
+                        <div class="flex flex-col gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">สถานะการชำระเงิน</label>
+                                <select id="payment-status-filter" class="border border-gray-300 rounded-md px-3 py-2 w-full">
+                                    <option value="all">ทั้งหมด</option>
+                                    <option value="paid">ชำระแล้ว</option>
+                                    <option value="unpaid">ยังไม่ชำระ</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหาชื่อ</label>
+                                <input type="text" id="name-search" class="border border-gray-300 rounded-md px-3 py-2 w-full" placeholder="พิมพ์ชื่อนักเรียน">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="no-class-selected" class="text-center py-8 md:py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 md:h-16 md:w-16 mx-auto text-orange-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                        <p class="text-gray-500 text-base md:text-lg">กรุณาเลือกสายชั้นจากเมนูด้านบน</p>
+                    </div>
+
+                    <div id="student-list" class="hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-orange-100">
+                                    <tr>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">เลขที่</th>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">สถานะ</th>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">วันที่ชำระ</th>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="student-table-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Student data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal modal-enter bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">เข้าสู่ระบบผู้ดูแล</h3>
+                    <button type="button" class="close-modal text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="admin-login-form" class="space-y-4">
+                    <div>
+                        <label for="admin-username" class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ใช้</label>
+                        <input type="text" id="admin-username" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                    </div>
+                    <div>
+                        <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+                        <input type="password" id="admin-password" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                    </div>
+                    <div id="login-error" class="text-red-600 text-sm hidden">
+                        ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง
+                    </div>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" class="close-modal bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-300">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+                            เข้าสู่ระบบ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal modal-enter bg-white rounded-lg shadow-xl max-w-md w-full mx-4 my-4 overflow-y-auto max-h-[90vh]">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900" id="payment-modal-title">บันทึกการชำระเงิน</h3>
+                    <button type="button" class="close-modal text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="payment-form" class="space-y-4">
+                    <input type="hidden" id="student-id">
+                    <div>
+                        <label for="student-name" class="block text-sm font-medium text-gray-700 mb-1">ชื่อนักเรียน</label>
+                        <input type="text" id="student-name" class="border border-gray-300 rounded-md px-3 py-2 w-full bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label for="student-class" class="block text-sm font-medium text-gray-700 mb-1">สายชั้น</label>
+                        <input type="text" id="student-class" class="border border-gray-300 rounded-md px-3 py-2 w-full bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label for="payment-date" class="block text-sm font-medium text-gray-700 mb-1">วันที่ชำระเงิน</label>
+                        <input type="date" id="payment-date" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                    </div>
+                    <div>
+                        <label for="payment-amount" class="block text-sm font-medium text-gray-700 mb-1">จำนวนเงิน (บาท)</label>
+                        <input type="number" id="payment-amount" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">หลักฐานการชำระเงิน</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center" id="image-drop-area">
+                            <input type="file" id="payment-proof" class="hidden" accept="image/*">
+                            <div id="upload-prompt">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="text-sm text-gray-500">คลิกเพื่ออัปโหลดรูปภาพ หรือลากและวางที่นี่</p>
+                            </div>
+                            <div id="image-preview" class="hidden mt-2">
+                                <img id="preview-image" class="max-h-40 mx-auto" src="" alt="ตัวอย่างรูปภาพ">
+                                <button type="button" id="remove-image" class="mt-2 text-sm text-red-600 hover:text-red-800">ลบรูปภาพ</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="payment-note" class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ (ถ้ามี)</label>
+                        <textarea id="payment-note" class="border border-gray-300 rounded-md px-3 py-2 w-full" rows="2"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" class="close-modal bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-300">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+                            บันทึกการชำระเงิน
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Payment Modal -->
+    <div id="view-payment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal modal-enter bg-white rounded-lg shadow-xl max-w-md w-full mx-4 my-4 overflow-y-auto max-h-[90vh]">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">รายละเอียดการชำระเงิน</h3>
+                    <button type="button" class="close-modal text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">ชื่อนักเรียน</p>
+                            <p id="view-student-name" class="font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">สายชั้น</p>
+                            <p id="view-student-class" class="font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">วันที่ชำระเงิน</p>
+                            <p id="view-payment-date" class="font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">จำนวนเงิน</p>
+                            <p id="view-payment-amount" class="font-medium"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">หลักฐานการชำระเงิน</p>
+                        <div id="view-payment-proof" class="border rounded-md p-2 text-center">
+                            <img id="view-proof-image" class="max-h-60 mx-auto" src="" alt="หลักฐานการชำระเงิน">
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">หมายเหตุ</p>
+                        <p id="view-payment-note" class="border rounded-md p-3 bg-gray-50 min-h-[60px]"></p>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" class="close-modal bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-300">
+                            ปิด
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal modal-enter bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 my-4 overflow-y-auto max-h-[90vh]">
+            <div class="p-4 md:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">ผู้ดูแลระบบ</h3>
+                    <button type="button" class="close-modal text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Admin Tabs -->
+                <div class="mb-6 border-b border-gray-200 overflow-x-auto">
+                    <ul class="flex flex-wrap -mb-px">
+                        <li class="mr-2">
+                            <button id="tab-classes" class="admin-tab inline-block p-3 md:p-4 border-b-2 border-orange-600 text-orange-600 font-medium">
+                                จัดการสายชั้น
+                            </button>
+                        </li>
+                        <li class="mr-2">
+                            <button id="tab-students" class="admin-tab inline-block p-3 md:p-4 border-b-2 border-transparent hover:text-orange-600 hover:border-orange-300">
+                                จัดการนักเรียน
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Classes Tab Content -->
+                <div id="tab-content-classes" class="admin-tab-content">
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-class-name" class="border border-gray-300 rounded-md px-3 py-2 flex-grow" placeholder="ชื่อสายชั้นใหม่ เช่น ม.1/1">
+                        <button id="add-class-btn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition duration-300">เพิ่มสายชั้น</button>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-md p-4">
+                        <h5 class="font-medium mb-4">สายชั้นทั้งหมด</h5>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-orange-50">
+                                    <tr>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">ชื่อสายชั้น</th>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">จำนวนนักเรียน</th>
+                                        <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-class-list" class="bg-white divide-y divide-gray-200">
+                                    <!-- Class list will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Students Tab Content -->
+                <div id="tab-content-students" class="admin-tab-content hidden">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือกสายชั้น</label>
+                        <select id="admin-class-select" class="border border-gray-300 rounded-md px-3 py-2 w-full">
+                            <option value="">-- เลือกสายชั้น --</option>
+                        </select>
+                    </div>
+                    
+                    <div id="student-management" class="hidden">
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="new-student-number" class="border border-gray-300 rounded-md px-3 py-2 w-16" placeholder="เลขที่">
+                            <input type="text" id="new-student-name" class="border border-gray-300 rounded-md px-3 py-2 flex-grow" placeholder="ชื่อ-นามสกุล">
+                            <button id="add-student-btn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition duration-300">เพิ่ม</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-md p-4">
+                            <h5 class="font-medium mb-4">รายชื่อนักเรียน</h5>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-orange-50">
+                                        <tr>
+                                            <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">เลขที่</th>
+                                            <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+                                            <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">สถานะการชำระเงิน</th>
+                                            <th scope="col" class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">จัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-student-list" class="bg-white divide-y divide-gray-200">
+                                        <!-- Student list will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Class Modal -->
+    <div id="edit-class-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal modal-enter bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">แก้ไขสายชั้น</h3>
+                    <button type="button" class="close-modal text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="edit-class-form" class="space-y-4">
+                    <input type="hidden" id="edit-class-id">
+                    <div>
+                        <label for="edit-class-name" class="block text-sm font-medium text-gray-700 mb-1">ชื่อสายชั้น</label>
+                        <input type="text" id="edit-class-name" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" class="close-modal bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-300">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+                            บันทึก
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="edit-student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal modal-enter bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">แก้ไขข้อมูลนักเรียน</h3>
+                    <button type="button" class="close-modal text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="edit-student-form" class="space-y-4">
+                    <input type="hidden" id="edit-student-id">
+                    <div>
+                        <label for="edit-student-number" class="block text-sm font-medium text-gray-700 mb-1">เลขที่</label>
+                        <input type="text" id="edit-student-number" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                    </div>
+                    <div>
+                        <label for="edit-student-name" class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
+                        <input type="text" id="edit-student-name" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                    </div>
+                    <div>
+                        <label for="edit-student-class" class="block text-sm font-medium text-gray-700 mb-1">สายชั้น</label>
+                        <select id="edit-student-class" class="border border-gray-300 rounded-md px-3 py-2 w-full" required>
+                            <!-- Class options will be populated here -->
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" class="close-modal bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-300">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+                            บันทึก
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal modal-enter bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">ยืนยันการลบ</h3>
+                    <button type="button" class="close-modal text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="mb-6">
+                    <p id="delete-confirmation-text">คุณต้องการลบรายการนี้ใช่หรือไม่?</p>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="close-modal bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-300">
+                        ยกเลิก
+                    </button>
+                    <button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+                        ยืนยันการลบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage
+        let classes = [];
+        let students = [];
+        
+        // Admin credentials
+        const adminCredentials = {
+            username: 'admin',
+            password: '1234'
+        };
+        
+        let currentClassId = null;
+        let deleteTarget = { type: null, id: null };
+        let nextStudentId = 1;
+        let nextClassId = 1;
+        let currentAdminTab = 'classes';
+        let isAdminLoggedIn = false;
+        
+        // DOM Elements
+        const classButtonsContainer = document.getElementById('class-buttons');
+        const studentListContainer = document.getElementById('student-list-container');
+        const noClassSelected = document.getElementById('no-class-selected');
+        const studentList = document.getElementById('student-list');
+        const studentTableBody = document.getElementById('student-table-body');
+        const currentClassTitle = document.getElementById('current-class-title');
+        const addPaymentBtn = document.getElementById('add-payment-btn');
+        const filterBtn = document.getElementById('filter-btn');
+        const filterOptions = document.getElementById('filter-options');
+        const paymentStatusFilter = document.getElementById('payment-status-filter');
+        const nameSearch = document.getElementById('name-search');
+        
+        // Modals
+        const adminLoginModal = document.getElementById('admin-login-modal');
+        const paymentModal = document.getElementById('payment-modal');
+        const viewPaymentModal = document.getElementById('view-payment-modal');
+        const adminModal = document.getElementById('admin-modal');
+        const editClassModal = document.getElementById('edit-class-modal');
+        const editStudentModal = document.getElementById('edit-student-modal');
+        const deleteModal = document.getElementById('delete-modal');
+        
+        // Admin Login Form Elements
+        const adminLoginForm = document.getElementById('admin-login-form');
+        const adminUsername = document.getElementById('admin-username');
+        const adminPassword = document.getElementById('admin-password');
+        const loginError = document.getElementById('login-error');
+        
+        // Payment Form Elements
+        const paymentForm = document.getElementById('payment-form');
+        const studentIdInput = document.getElementById('student-id');
+        const studentNameInput = document.getElementById('student-name');
+        const studentClassInput = document.getElementById('student-class');
+        const paymentDateInput = document.getElementById('payment-date');
+        const paymentAmountInput = document.getElementById('payment-amount');
+        const paymentProofInput = document.getElementById('payment-proof');
+        const paymentNoteInput = document.getElementById('payment-note');
+        const imageDropArea = document.getElementById('image-drop-area');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImage = document.getElementById('preview-image');
+        const removeImageBtn = document.getElementById('remove-image');
+        
+        // View Payment Elements
+        const viewStudentName = document.getElementById('view-student-name');
+        const viewStudentClass = document.getElementById('view-student-class');
+        const viewPaymentDate = document.getElementById('view-payment-date');
+        const viewPaymentAmount = document.getElementById('view-payment-amount');
+        const viewProofImage = document.getElementById('view-proof-image');
+        const viewPaymentNote = document.getElementById('view-payment-note');
+        
+        // Admin Elements
+        const adminBtn = document.getElementById('admin-btn');
+        const tabClasses = document.getElementById('tab-classes');
+        const tabStudents = document.getElementById('tab-students');
+        const tabContentClasses = document.getElementById('tab-content-classes');
+        const tabContentStudents = document.getElementById('tab-content-students');
+        const newClassNameInput = document.getElementById('new-class-name');
+        const addClassBtn = document.getElementById('add-class-btn');
+        const adminClassList = document.getElementById('admin-class-list');
+        const adminClassSelect = document.getElementById('admin-class-select');
+        const studentManagement = document.getElementById('student-management');
+        const newStudentNumberInput = document.getElementById('new-student-number');
+        const newStudentNameInput = document.getElementById('new-student-name');
+        const addStudentBtn = document.getElementById('add-student-btn');
+        const adminStudentList = document.getElementById('admin-student-list');
+        
+        // Edit Class Form Elements
+        const editClassForm = document.getElementById('edit-class-form');
+        const editClassIdInput = document.getElementById('edit-class-id');
+        const editClassNameInput = document.getElementById('edit-class-name');
+        
+        // Edit Student Form Elements
+        const editStudentForm = document.getElementById('edit-student-form');
+        const editStudentIdInput = document.getElementById('edit-student-id');
+        const editStudentNumberInput = document.getElementById('edit-student-number');
+        const editStudentNameInput = document.getElementById('edit-student-name');
+        const editStudentClassSelect = document.getElementById('edit-student-class');
+        
+        // Delete Confirmation Elements
+        const deleteConfirmationText = document.getElementById('delete-confirmation-text');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        
+        // LocalStorage keys
+        const STORAGE_KEYS = {
+            CLASSES: 'payment_tracker_classes',
+            STUDENTS: 'payment_tracker_students',
+            NEXT_CLASS_ID: 'payment_tracker_next_class_id',
+            NEXT_STUDENT_ID: 'payment_tracker_next_student_id',
+            CURRENT_CLASS_ID: 'payment_tracker_current_class_id'
+        };
+        
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(classes));
+            localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+            localStorage.setItem(STORAGE_KEYS.NEXT_CLASS_ID, nextClassId);
+            localStorage.setItem(STORAGE_KEYS.NEXT_STUDENT_ID, nextStudentId);
+            if (currentClassId) {
+                localStorage.setItem(STORAGE_KEYS.CURRENT_CLASS_ID, currentClassId);
+            }
+        }
+        
+        // Load data from localStorage
+        function loadData() {
+            // Load classes
+            const storedClasses = localStorage.getItem(STORAGE_KEYS.CLASSES);
+            if (storedClasses) {
+                classes = JSON.parse(storedClasses);
+            }
+            
+            // Load students
+            const storedStudents = localStorage.getItem(STORAGE_KEYS.STUDENTS);
+            if (storedStudents) {
+                students = JSON.parse(storedStudents);
+            }
+            
+            // Load next IDs
+            const storedNextClassId = localStorage.getItem(STORAGE_KEYS.NEXT_CLASS_ID);
+            if (storedNextClassId) {
+                nextClassId = parseInt(storedNextClassId);
+            }
+            
+            const storedNextStudentId = localStorage.getItem(STORAGE_KEYS.NEXT_STUDENT_ID);
+            if (storedNextStudentId) {
+                nextStudentId = parseInt(storedNextStudentId);
+            }
+            
+            // Load current class ID
+            const storedCurrentClassId = localStorage.getItem(STORAGE_KEYS.CURRENT_CLASS_ID);
+            if (storedCurrentClassId && classes.some(c => c.id === parseInt(storedCurrentClassId))) {
+                currentClassId = parseInt(storedCurrentClassId);
+            }
+        }
+        
+        // Initialize the application
+        function init() {
+            loadData();
+            renderClassButtons();
+            setupEventListeners();
+            updateAdminClassSelect();
+            
+            // If there's a current class selected, show it
+            if (currentClassId) {
+                selectClass(currentClassId);
+            }
+        }
+        
+        // Render class buttons
+        function renderClassButtons() {
+            classButtonsContainer.innerHTML = '';
+            
+            if (classes.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'text-center py-3 text-gray-500';
+                emptyMessage.textContent = 'ยังไม่มีสายชั้น กรุณาเพิ่มสายชั้นในระบบผู้ดูแล';
+                classButtonsContainer.appendChild(emptyMessage);
+                return;
+            }
+            
+            classes.forEach(classItem => {
+                const button = document.createElement('button');
+                button.className = `w-full py-2 px-4 rounded-md transition duration-300 text-left ${currentClassId === classItem.id ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-800 hover:bg-orange-200'}`;
+                button.textContent = classItem.name;
+                button.dataset.classId = classItem.id;
+                button.addEventListener('click', () => selectClass(classItem.id));
+                classButtonsContainer.appendChild(button);
+            });
+        }
+        
+        // Select a class
+        function selectClass(classId) {
+            currentClassId = parseInt(classId);
+            renderClassButtons();
+            renderStudentList();
+            
+            noClassSelected.classList.add('hidden');
+            studentList.classList.remove('hidden');
+            addPaymentBtn.classList.remove('hidden');
+            filterBtn.classList.remove('hidden');
+            
+            const selectedClass = classes.find(c => c.id === currentClassId);
+            currentClassTitle.textContent = `สายชั้น ${selectedClass.name}`;
+            
+            // Save current class ID to localStorage
+            localStorage.setItem(STORAGE_KEYS.CURRENT_CLASS_ID, currentClassId);
+        }
+        
+        // Render student list for the selected class
+        function renderStudentList() {
+            if (!currentClassId) return;
+            
+            const statusFilter = paymentStatusFilter.value;
+            const nameQuery = nameSearch.value.toLowerCase();
+            
+            const filteredStudents = students
+                .filter(student => student.classId === currentClassId)
+                .filter(student => {
+                    if (statusFilter === 'all') return true;
+                    return (statusFilter === 'paid' && student.paid) || (statusFilter === 'unpaid' && !student.paid);
+                })
+                .filter(student => {
+                    if (!nameQuery) return true;
+                    return student.name.toLowerCase().includes(nameQuery);
+                })
+                .sort((a, b) => a.number - b.number);
+            
+            studentTableBody.innerHTML = '';
+            
+            if (filteredStudents.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลนักเรียน</td>
+                `;
+                studentTableBody.appendChild(row);
+                return;
+            }
+            
+            filteredStudents.forEach(student => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-orange-50';
+                
+                row.innerHTML = `
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">${student.number}</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">${student.name}</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${student.paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${student.paid ? 'ชำระแล้ว' : 'ยังไม่ชำระ'}
+                        </span>
+                    </td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">${student.paid ? formatDate(student.paymentDate) : '-'}</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                        ${student.paid ? 
+                            `<button class="view-payment-btn text-blue-600 hover:text-blue-800 mr-3" data-student-id="${student.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>` : 
+                            `<button class="add-payment-btn text-green-600 hover:text-green-800 mr-3" data-student-id="${student.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                                </svg>
+                            </button>`
+                        }
+                        ${student.paid ? 
+                            `<button class="remove-payment-btn text-red-600 hover:text-red-800" data-student-id="${student.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>` : ''
+                        }
+                    </td>
+                `;
+                
+                studentTableBody.appendChild(row);
+            });
+            
+            // Add event listeners to the buttons
+            document.querySelectorAll('.add-payment-btn').forEach(btn => {
+                btn.addEventListener('click', () => openPaymentModal(btn.dataset.studentId));
+            });
+            
+            document.querySelectorAll('.view-payment-btn').forEach(btn => {
+                btn.addEventListener('click', () => openViewPaymentModal(btn.dataset.studentId));
+            });
+            
+            document.querySelectorAll('.remove-payment-btn').forEach(btn => {
+                btn.addEventListener('click', () => openDeletePaymentModal(btn.dataset.studentId));
+            });
+        }
+        
+        // Open payment modal
+        function openPaymentModal(studentId) {
+            const student = students.find(s => s.id === parseInt(studentId));
+            if (!student) return;
+            
+            const classItem = classes.find(c => c.id === student.classId);
+            
+            studentIdInput.value = student.id;
+            studentNameInput.value = student.name;
+            studentClassInput.value = classItem.name;
+            paymentDateInput.value = new Date().toISOString().split('T')[0];
+            paymentAmountInput.value = '';
+            paymentNoteInput.value = '';
+            
+            // Reset image upload
+            paymentProofInput.value = '';
+            uploadPrompt.classList.remove('hidden');
+            imagePreview.classList.add('hidden');
+            previewImage.src = '';
+            
+            showModal(paymentModal);
+        }
+        
+        // Open view payment modal
+        function openViewPaymentModal(studentId) {
+            const student = students.find(s => s.id === parseInt(studentId));
+            if (!student || !student.paid) return;
+            
+            const classItem = classes.find(c => c.id === student.classId);
+            
+            viewStudentName.textContent = student.name;
+            viewStudentClass.textContent = classItem.name;
+            viewPaymentDate.textContent = formatDate(student.paymentDate);
+            viewPaymentAmount.textContent = `${student.paymentAmount} บาท`;
+            viewProofImage.src = student.paymentProof;
+            viewPaymentNote.textContent = student.paymentNote || '-';
+            
+            showModal(viewPaymentModal);
+        }
+        
+        // Open delete payment modal
+        function openDeletePaymentModal(studentId) {
+            const student = students.find(s => s.id === parseInt(studentId));
+            if (!student) return;
+            
+            deleteTarget = { type: 'payment', id: parseInt(studentId) };
+            deleteConfirmationText.textContent = `คุณต้องการลบข้อมูลการชำระเงินของ ${student.name} ใช่หรือไม่?`;
+            
+            showModal(deleteModal);
+        }
+        
+        // Open edit class modal
+        function openEditClassModal(classId) {
+            const classItem = classes.find(c => c.id === parseInt(classId));
+            if (!classItem) return;
+            
+            editClassIdInput.value = classItem.id;
+            editClassNameInput.value = classItem.name;
+            
+            showModal(editClassModal);
+        }
+        
+        // Open delete class modal
+        function openDeleteClassModal(classId) {
+            const classItem = classes.find(c => c.id === parseInt(classId));
+            if (!classItem) return;
+            
+            deleteTarget = { type: 'class', id: parseInt(classId) };
+            deleteConfirmationText.textContent = `คุณต้องการลบสายชั้น ${classItem.name} ใช่หรือไม่? การลบจะทำให้ข้อมูลนักเรียนทั้งหมดในสายชั้นนี้หายไปด้วย`;
+            
+            showModal(deleteModal);
+        }
+        
+        // Open edit student modal
+        function openEditStudentModal(studentId) {
+            const student = students.find(s => s.id === parseInt(studentId));
+            if (!student) return;
+            
+            editStudentIdInput.value = student.id;
+            editStudentNumberInput.value = student.number;
+            editStudentNameInput.value = student.name;
+            
+            // Populate class select
+            editStudentClassSelect.innerHTML = '';
+            classes.forEach(classItem => {
+                const option = document.createElement('option');
+                option.value = classItem.id;
+                option.textContent = classItem.name;
+                if (classItem.id === student.classId) {
+                    option.selected = true;
+                }
+                editStudentClassSelect.appendChild(option);
+            });
+            
+            showModal(editStudentModal);
+        }
+        
+        // Open delete student modal
+        function openDeleteStudentModal(studentId) {
+            const student = students.find(s => s.id === parseInt(studentId));
+            if (!student) return;
+            
+            deleteTarget = { type: 'student', id: parseInt(studentId) };
+            deleteConfirmationText.textContent = `คุณต้องการลบข้อมูลนักเรียน ${student.name} ใช่หรือไม่?`;
+            
+            showModal(deleteModal);
+        }
+        
+        // Handle delete confirmation
+        function handleDeleteConfirmation() {
+            if (!deleteTarget.type || !deleteTarget.id) return;
+            
+            if (deleteTarget.type === 'payment') {
+                const student = students.find(s => s.id === deleteTarget.id);
+                if (student) {
+                    student.paid = false;
+                    delete student.paymentDate;
+                    delete student.paymentAmount;
+                    delete student.paymentProof;
+                    delete student.paymentNote;
+                }
+            } else if (deleteTarget.type === 'class') {
+                classes = classes.filter(c => c.id !== deleteTarget.id);
+                students = students.filter(s => s.classId !== deleteTarget.id);
+                
+                if (currentClassId === deleteTarget.id) {
+                    currentClassId = null;
+                    localStorage.removeItem(STORAGE_KEYS.CURRENT_CLASS_ID);
+                    noClassSelected.classList.remove('hidden');
+                    studentList.classList.add('hidden');
+                    addPaymentBtn.classList.add('hidden');
+                    filterBtn.classList.add('hidden');
+                    currentClassTitle.textContent = 'กรุณาเลือกสายชั้น';
+                }
+                
+                renderClassButtons();
+                updateAdminClassSelect();
+            } else if (deleteTarget.type === 'student') {
+                students = students.filter(s => s.id !== deleteTarget.id);
+                renderAdminStudentList();
+            }
+            
+            // Save changes to localStorage
+            saveData();
+            
+            renderStudentList();
+            renderAdminClassList();
+            closeModal(deleteModal);
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Admin login form submission
+            adminLoginForm.addEventListener('submit', handleAdminLogin);
+            
+            // Close modal buttons
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    closeAllModals();
+                });
+            });
+            
+            // Payment form submission
+            paymentForm.addEventListener('submit', handlePaymentFormSubmit);
+            
+            // Image upload handling
+            paymentProofInput.addEventListener('change', handleImageUpload);
+            imageDropArea.addEventListener('click', () => paymentProofInput.click());
+            imageDropArea.addEventListener('dragover', e => {
+                e.preventDefault();
+                imageDropArea.classList.add('border-orange-500');
+            });
+            imageDropArea.addEventListener('dragleave', () => {
+                imageDropArea.classList.remove('border-orange-500');
+            });
+            imageDropArea.addEventListener('drop', e => {
+                e.preventDefault();
+                imageDropArea.classList.remove('border-orange-500');
+                
+                if (e.dataTransfer.files.length) {
+                    paymentProofInput.files = e.dataTransfer.files;
+                    handleImageUpload();
+                }
+            });
+            
+            removeImageBtn.addEventListener('click', () => {
+                paymentProofInput.value = '';
+                uploadPrompt.classList.remove('hidden');
+                imagePreview.classList.add('hidden');
+                previewImage.src = '';
+            });
+            
+            // Filter button
+            filterBtn.addEventListener('click', () => {
+                filterOptions.classList.toggle('hidden');
+            });
+            
+            // Filter change events
+            paymentStatusFilter.addEventListener('change', renderStudentList);
+            nameSearch.addEventListener('input', renderStudentList);
+            
+            // Add payment button
+            addPaymentBtn.addEventListener('click', () => {
+                const unpaidStudents = students.filter(s => s.classId === currentClassId && !s.paid);
+                if (unpaidStudents.length > 0) {
+                    openPaymentModal(unpaidStudents[0].id);
+                } else {
+                    alert('ไม่มีนักเรียนที่ยังไม่ชำระเงินในสายชั้นนี้');
+                }
+            });
+            
+            // Admin button
+            adminBtn.addEventListener('click', () => {
+                if (isAdminLoggedIn) {
+                    renderAdminClassList();
+                    showModal(adminModal);
+                } else {
+                    showModal(adminLoginModal);
+                }
+            });
+            
+            // Admin tabs
+            tabClasses.addEventListener('click', () => switchAdminTab('classes'));
+            tabStudents.addEventListener('click', () => switchAdminTab('students'));
+            
+            // Add class button
+            addClassBtn.addEventListener('click', handleAddClass);
+            
+            // Admin class select
+            adminClassSelect.addEventListener('change', handleAdminClassSelect);
+            
+            // Add student button
+            addStudentBtn.addEventListener('click', handleAddStudent);
+            
+            // Edit class form submission
+            editClassForm.addEventListener('submit', handleEditClassFormSubmit);
+            
+            // Edit student form submission
+            editStudentForm.addEventListener('submit', handleEditStudentFormSubmit);
+            
+            // Delete confirmation button
+            confirmDeleteBtn.addEventListener('click', handleDeleteConfirmation);
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('fixed')) {
+                    closeAllModals();
+                }
+            });
+            
+            // Prevent event propagation from modal content
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            });
+        }
+        
+        // Handle admin login
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            
+            const username = adminUsername.value;
+            const password = adminPassword.value;
+            
+            if (username === adminCredentials.username && password === adminCredentials.password) {
+                isAdminLoggedIn = true;
+                loginError.classList.add('hidden');
+                closeModal(adminLoginModal);
+                
+                renderAdminClassList();
+                showModal(adminModal);
+            } else {
+                loginError.classList.remove('hidden');
+            }
+        }
+        
+        // Switch admin tab
+        function switchAdminTab(tab) {
+            currentAdminTab = tab;
+            
+            // Update tab styling
+            document.querySelectorAll('.admin-tab').forEach(el => {
+                el.classList.remove('border-orange-600', 'text-orange-600');
+                el.classList.add('border-transparent', 'hover:text-orange-600', 'hover:border-orange-300');
+            });
+            
+            const activeTab = tab === 'classes' ? tabClasses : tabStudents;
+            activeTab.classList.remove('border-transparent', 'hover:text-orange-600', 'hover:border-orange-300');
+            activeTab.classList.add('border-orange-600', 'text-orange-600');
+            
+            // Show/hide tab content
+            document.querySelectorAll('.admin-tab-content').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            const activeContent = tab === 'classes' ? tabContentClasses : tabContentStudents;
+            activeContent.classList.remove('hidden');
+            
+            // Update content if needed
+            if (tab === 'classes') {
+                renderAdminClassList();
+            } else {
+                updateAdminClassSelect();
+            }
+        }
+        
+        // Handle payment form submission
+        function handlePaymentFormSubmit(e) {
+            e.preventDefault();
+            
+            const studentId = parseInt(studentIdInput.value);
+            const student = students.find(s => s.id === studentId);
+            
+            if (!student) return;
+            
+            // Check if image is uploaded
+            if (!previewImage.src) {
+                alert('กรุณาอัปโหลดหลักฐานการชำระเงิน');
+                return;
+            }
+            
+            student.paid = true;
+            student.paymentDate = paymentDateInput.value;
+            student.paymentAmount = parseInt(paymentAmountInput.value);
+            student.paymentProof = previewImage.src;
+            student.paymentNote = paymentNoteInput.value;
+            
+            // Save changes to localStorage
+            saveData();
+            
+            renderStudentList();
+            closeModal(paymentModal);
+        }
+        
+        // Handle image upload
+        function handleImageUpload() {
+            const file = paymentProofInput.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                alert('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = e => {
+                previewImage.src = e.target.result;
+                uploadPrompt.classList.add('hidden');
+                imagePreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Handle add class
+        function handleAddClass() {
+            const className = newClassNameInput.value.trim();
+            if (!className) {
+                alert('กรุณากรอกชื่อสายชั้น');
+                return;
+            }
+            
+            if (classes.some(c => c.name === className)) {
+                alert('มีสายชั้นนี้อยู่แล้ว');
+                return;
+            }
+            
+            const newClass = {
+                id: nextClassId++,
+                name: className
+            };
+            
+            classes.push(newClass);
+            newClassNameInput.value = '';
+            
+            // Save changes to localStorage
+            saveData();
+            
+            renderClassButtons();
+            renderAdminClassList();
+            updateAdminClassSelect();
+        }
+        
+        // Handle edit class form submission
+        function handleEditClassFormSubmit(e) {
+            e.preventDefault();
+            
+            const classId = parseInt(editClassIdInput.value);
+            const className = editClassNameInput.value.trim();
+            
+            if (!className) {
+                alert('กรุณากรอกชื่อสายชั้น');
+                return;
+            }
+            
+            if (classes.some(c => c.name === className && c.id !== classId)) {
+                alert('มีสายชั้นนี้อยู่แล้ว');
+                return;
+            }
+            
+            const classItem = classes.find(c => c.id === classId);
+            if (classItem) {
+                classItem.name = className;
+            }
+            
+            // Save changes to localStorage
+            saveData();
+            
+            renderClassButtons();
+            renderAdminClassList();
+            updateAdminClassSelect();
+            
+            if (currentClassId === classId) {
+                currentClassTitle.textContent = `สายชั้น ${className}`;
+            }
+            
+            closeModal(editClassModal);
+        }
+        
+        // Handle admin class select
+        function handleAdminClassSelect() {
+            const classId = parseInt(adminClassSelect.value);
+            if (!classId) {
+                studentManagement.classList.add('hidden');
+                return;
+            }
+            
+            studentManagement.classList.remove('hidden');
+            renderAdminStudentList();
+        }
+        
+        // Handle add student
+        function handleAddStudent() {
+            const classId = parseInt(adminClassSelect.value);
+            if (!classId) return;
+            
+            const studentNumber = parseInt(newStudentNumberInput.value);
+            const studentName = newStudentNameInput.value.trim();
+            
+            if (isNaN(studentNumber) || studentNumber <= 0) {
+                alert('กรุณากรอกเลขที่ให้ถูกต้อง');
+                return;
+            }
+            
+            if (!studentName) {
+                alert('กรุณากรอกชื่อนักเรียน');
+                return;
+            }
+            
+            if (students.some(s => s.classId === classId && s.number === studentNumber)) {
+                alert('มีนักเรียนเลขที่นี้อยู่แล้วในสายชั้นนี้');
+                return;
+            }
+            
+            const newStudent = {
+                id: nextStudentId++,
+                classId: classId,
+                number: studentNumber,
+                name: studentName,
+                paid: false
+            };
+            
+            students.push(newStudent);
+            newStudentNumberInput.value = '';
+            newStudentNameInput.value = '';
+            
+            // Save changes to localStorage
+            saveData();
+            
+            renderAdminStudentList();
+            if (currentClassId === classId) {
+                renderStudentList();
+            }
+        }
+        
+        // Handle edit student form submission
+        function handleEditStudentFormSubmit(e) {
+            e.preventDefault();
+            
+            const studentId = parseInt(editStudentIdInput.value);
+            const studentNumber = parseInt(editStudentNumberInput.value);
+            const studentName = editStudentNameInput.value.trim();
+            const classId = parseInt(editStudentClassSelect.value);
+            
+            if (isNaN(studentNumber) || studentNumber <= 0) {
+                alert('กรุณากรอกเลขที่ให้ถูกต้อง');
+                return;
+            }
+            
+            if (!studentName) {
+                alert('กรุณากรอกชื่อนักเรียน');
+                return;
+            }
+            
+            // Check if the student number already exists in the selected class (excluding this student)
+            if (students.some(s => s.classId === classId && s.number === studentNumber && s.id !== studentId)) {
+                alert('มีนักเรียนเลขที่นี้อยู่แล้วในสายชั้นนี้');
+                return;
+            }
+            
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                const oldClassId = student.classId;
+                student.number = studentNumber;
+                student.name = studentName;
+                student.classId = classId;
+                
+                // Save changes to localStorage
+                saveData();
+                
+                if (currentClassId === oldClassId || currentClassId === classId) {
+                    renderStudentList();
+                }
+            }
+            
+            renderAdminStudentList();
+            closeModal(editStudentModal);
+        }
+        
+        // Render admin class list
+        function renderAdminClassList() {
+            adminClassList.innerHTML = '';
+            
+            if (classes.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="3" class="px-6 py-4 text-center text-gray-500">ยังไม่มีสายชั้น กรุณาเพิ่มสายชั้น</td>
+                `;
+                adminClassList.appendChild(row);
+                return;
+            }
+            
+            classes.forEach(classItem => {
+                const classStudentCount = students.filter(s => s.classId === classItem.id).length;
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-orange-50';
+                
+                row.innerHTML = `
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">${classItem.name}</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">${classStudentCount} คน</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                        <button class="edit-class-btn text-blue-600 hover:text-blue-800 mr-3" data-class-id="${classItem.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </button>
+                        <button class="delete-class-btn text-red-600 hover:text-red-800" data-class-id="${classItem.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                
+                adminClassList.appendChild(row);
+            });
+            
+            // Add event listeners to buttons
+            document.querySelectorAll('.edit-class-btn').forEach(btn => {
+                btn.addEventListener('click', () => openEditClassModal(btn.dataset.classId));
+            });
+            
+            document.querySelectorAll('.delete-class-btn').forEach(btn => {
+                btn.addEventListener('click', () => openDeleteClassModal(btn.dataset.classId));
+            });
+        }
+        
+        // Update admin class select
+        function updateAdminClassSelect() {
+            adminClassSelect.innerHTML = '<option value="">-- เลือกสายชั้น --</option>';
+            
+            classes.forEach(classItem => {
+                const option = document.createElement('option');
+                option.value = classItem.id;
+                option.textContent = classItem.name;
+                adminClassSelect.appendChild(option);
+            });
+            
+            // Reset student management section
+            studentManagement.classList.add('hidden');
+        }
+        
+        // Render admin student list
+        function renderAdminStudentList() {
+            const classId = parseInt(adminClassSelect.value);
+            if (!classId) return;
+            
+            adminStudentList.innerHTML = '';
+            
+            const classStudents = students
+                .filter(s => s.classId === classId)
+                .sort((a, b) => a.number - b.number);
+            
+            if (classStudents.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">ไม่มีนักเรียนในสายชั้นนี้</td>
+                `;
+                adminStudentList.appendChild(row);
+                return;
+            }
+            
+            classStudents.forEach(student => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-orange-50';
+                
+                row.innerHTML = `
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">${student.number}</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">${student.name}</td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${student.paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${student.paid ? 'ชำระแล้ว' : 'ยังไม่ชำระ'}
+                        </span>
+                    </td>
+                    <td class="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                        <button class="edit-student-btn text-blue-600 hover:text-blue-800 mr-3" data-student-id="${student.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </button>
+                        <button class="delete-student-btn text-red-600 hover:text-red-800" data-student-id="${student.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                
+                adminStudentList.appendChild(row);
+            });
+            
+            // Add event listeners to buttons
+            document.querySelectorAll('.edit-student-btn').forEach(btn => {
+                btn.addEventListener('click', () => openEditStudentModal(btn.dataset.studentId));
+            });
+            
+            document.querySelectorAll('.delete-student-btn').forEach(btn => {
+                btn.addEventListener('click', () => openDeleteStudentModal(btn.dataset.studentId));
+            });
+        }
+        
+        // Show modal
+        function showModal(modal) {
+            // Close any open modals first
+            closeAllModals();
+            
+            // Show the requested modal
+            modal.classList.remove('hidden');
+            
+            // Add animation class
+            const modalContent = modal.querySelector('.modal');
+            modalContent.classList.add('modal-enter');
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                modalContent.classList.remove('modal-enter');
+            }, 300);
+        }
+        
+        // Close modal
+        function closeModal(modal) {
+            modal.classList.add('hidden');
+        }
+        
+        // Close all modals
+        function closeAllModals() {
+            document.querySelectorAll('.fixed').forEach(modal => {
+                modal.classList.add('hidden');
+            });
+        }
+        
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        
+        // Initialize the application
+        init();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9611413b17db7b5a',t:'MTc1MjgzNDExNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
