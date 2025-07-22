@@ -614,36 +614,41 @@
             }
         }
         
-        // Load data from localStorage
-        function loadData() {
-            // Load classes
-            const storedClasses = localStorage.getItem(STORAGE_KEYS.CLASSES);
-            if (storedClasses) {
-                classes = JSON.parse(storedClasses);
-            }
-            
-            // Load students
-            const storedStudents = localStorage.getItem(STORAGE_KEYS.STUDENTS);
-            if (storedStudents) {
-                students = JSON.parse(storedStudents);
-            }
-            
-            // Load next IDs
-            const storedNextClassId = localStorage.getItem(STORAGE_KEYS.NEXT_CLASS_ID);
-            if (storedNextClassId) {
-                nextClassId = parseInt(storedNextClassId);
-            }
-            
-            const storedNextStudentId = localStorage.getItem(STORAGE_KEYS.NEXT_STUDENT_ID);
-            if (storedNextStudentId) {
-                nextStudentId = parseInt(storedNextStudentId);
-            }
-            
-            // Load current class ID
-            const storedCurrentClassId = localStorage.getItem(STORAGE_KEYS.CURRENT_CLASS_ID);
-            if (storedCurrentClassId && classes.some(c => c.id === parseInt(storedCurrentClassId))) {
-                currentClassId = parseInt(storedCurrentClassId);
-            }
+        function loadDataFromFirebase() {
+  firebase.database().ref("appData").once("value")
+    .then((snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      if (data.classes) {
+        classes = data.classes;
+      }
+
+      if (data.students) {
+        students = data.students;
+      }
+
+      if (data.nextClassId !== undefined) {
+        nextClassId = parseInt(data.nextClassId);
+      }
+
+      if (data.nextStudentId !== undefined) {
+        nextStudentId = parseInt(data.nextStudentId);
+      }
+
+      if (
+        data.currentClassId &&
+        classes.some(c => c.id === parseInt(data.currentClassId))
+      ) {
+        currentClassId = parseInt(data.currentClassId);
+      }
+
+      console.log("✅ โหลดข้อมูลจาก Firebase แล้ว");
+    })
+    .catch((error) => {
+      console.error("❌ โหลดข้อมูลจาก Firebase ไม่สำเร็จ:", error);
+    });
+      }
         }
         
         // Initialize the application
